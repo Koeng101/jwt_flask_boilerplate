@@ -38,8 +38,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 CORS(app)
 db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
-api = Api(app, version='1.2', title='Authenticator',
-            description='FreeGenes authenticator',
+api = Api(app, version='1.0', title='Authenticator',
+            description='FreeGenes authenticator. Used as a gateway to get tokens to interact with the other FreeGenes API services.',
             )
 migrate = Migrate(app, db)
 
