@@ -15,7 +15,6 @@ Werkzeug==0.15.2
 gunicorn
 flask_sqlalchemy
 flask_restplus
-jwt
 flask_httpauth
 passlib
 flask_migrate
