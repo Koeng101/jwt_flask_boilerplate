@@ -18,3 +18,4 @@ flask_restplus
 jwt
 flask_httpauth
 passlib
+flask_migrate
