@@ -20,11 +20,17 @@ import datetime
 PRIVATE_KEY = os.environ['PRIVATE_KEY']
 PUBLIC_KEY = os.environ['PUBLIC_KEY']
 URL = os.environ['URL']
+API_TITLE = os.environ['API_TITLE']
+API_DESCRIPTION = os.environ['API_DESCRIPTION']
+
 
 ROLE_KEYS = {
         os.environ['ADMIN_KEY']: 'admin',
         os.environ['USER_KEY']: 'user',
         }
+
+
+
 ########
 # Init #
 ########
@@ -38,8 +44,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 CORS(app)
 db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
-api = Api(app, version='1.0', title='Authenticator',
-            description='FreeGenes authenticator. Used as a gateway to get tokens to interact with the other FreeGenes API services.',
+api = Api(app, version='1.0', title=API_TITLE,
+            description=API_DESCRIPTION,
             )
 migrate = Migrate(app, db)
 
