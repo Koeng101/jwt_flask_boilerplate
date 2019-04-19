@@ -19,3 +19,4 @@ jwt
 flask_httpauth
 passlib
 flask_migrate
+psycopg2-binary
