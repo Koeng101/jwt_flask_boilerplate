@@ -115,10 +115,23 @@ def verify_password(username_or_token, password):
 ##############
 
 ns_keys = Namespace('public_key', description='Public key')
+validate_model = ns_keys.model("validate", {
+    "token": fields.String()
+    })
 @ns_keys.route('/')
 class PublicKey(Resource):
     def get(self):
         return jsonify({'public_key': PUBLIC_KEY})
+
+@ns_keys.route('/validate')
+class ValidateKey(Resource):
+    @ns_keys.doc('validate_key')
+    @ns_keys.expect(validate_model)
+    def post(self):
+        token = request.json.get('token')
+        decoded = jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
+        return jsonify(decoded)
+
 
 ns_users = Namespace('users', description='User login')
 user_model = ns_users.model("user", {
