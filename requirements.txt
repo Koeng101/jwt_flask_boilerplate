@@ -16,3 +16,5 @@ gunicorn
 flask_sqlalchemy
 flask_restplus
 jwt
+flask_httpauth
+passlib
