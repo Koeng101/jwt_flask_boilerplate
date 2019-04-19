@@ -1,0 +1,5 @@
+jwt-key
+jwt-key.pub
+venv
+migrations
+__pycache__
