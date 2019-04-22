@@ -114,6 +114,14 @@ def verify_password(username_or_token, password):
 # Namespaces #
 ##############
 
+def decode_token(token):
+    try:
+        decoded = jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
+    except Exception as e:
+        return {'message': e}
+    else:
+        return decoded
+
 ns_keys = Namespace('public_key', description='Public key')
 validate_model = ns_keys.model("validate", {
     "token": fields.String()
@@ -129,8 +137,7 @@ class ValidateKey(Resource):
     @ns_keys.expect(validate_model)
     def post(self):
         token = request.json.get('token')
-        decoded = jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
-        return jsonify(decoded)
+        return jsonify(decode_token(token))
 
 
 ns_users = Namespace('users', description='User login')
