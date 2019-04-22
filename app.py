@@ -29,16 +29,14 @@ def requires_auth(roles):
                 return jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
             try:
                 decoded = decode_token(str(request.headers['Token']))
-                print(decoded)
             except Exception as e:
-                if type(e) == jwt.exceptions.ExpiredSignatureError:
-                    return make_response(jsonify({'message': str(e)}), 401)
-                if request.json == None:
-                    return make_response(jsonify({'message': 'Token not posted'}), 401)
-                try:
-                    decoded = decode_token(request.json.get('token'))
-                except Exception as e:
-                    return make_response(jsonify({'message': str(e)}),401)
+                if request.json != None:
+                    if 'token' in request.json:
+                        try:
+                            decoded = decode_token(request.json.get('token'))
+                        except Exception as e:
+                            return make_response(jsonify({'message': str(e)}),401)
+                return make_response(jsonify({'message': str(e)}), 401)
             if set(roles).isdisjoint(decoded['roles']):
                 return make_response(jsonify({'message': 'Not authorized for this endpoint'}),401)
             return f(*args, **kwargs)
