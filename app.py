@@ -30,13 +30,16 @@ def requires_auth(roles):
             try:
                 decoded = decode_token(str(request.headers['Token']))
             except Exception as e:
+                post_token = False
                 if request.json != None:
                     if 'token' in request.json:
                         try:
                             decoded = decode_token(request.json.get('token'))
+                            post_token=True
                         except Exception as e:
                             return make_response(jsonify({'message': str(e)}),401)
-                return make_response(jsonify({'message': str(e)}), 401)
+                if not post_token:
+                    return make_response(jsonify({'message': str(e)}), 401)
             if set(roles).isdisjoint(decoded['roles']):
                 return make_response(jsonify({'message': 'Not authorized for this endpoint'}),401)
             return f(*args, **kwargs)
