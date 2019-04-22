@@ -30,6 +30,8 @@ def requires_auth(roles):
             try:
                 decoded = decode_token(str(request.authorization.username))
             except:
+                if request.json == None:
+                    return make_response(jsonify({'message': 'Token not posted'}), 401)
                 try:
                     decoded = decode_token(request.json.get('token'))
                 except Exception as e:
