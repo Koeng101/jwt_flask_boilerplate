@@ -1,24 +1,51 @@
 #!/usr/bin/env python
 import os
-from flask import Flask, abort, request, jsonify, g, url_for
+from flask import Flask, abort, request, jsonify, g, url_for, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
 from passlib.apps import custom_app_context as pwd_context
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
 
-import jwt
 from flask_restplus import Api, Resource, fields, Namespace
 from flask_cors import CORS
 from flask_migrate import Migrate
 import datetime
+
+
+################
+# Generic auth #
+################
+
+import jwt
+from functools import wraps
+from flask import make_response, jsonify
+PUBLIC_KEY = os.environ['PUBLIC_KEY']
+def requires_auth(roles):
+    def requires_auth_decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            def decode_token(token):
+                return jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
+            try:
+                decoded = decode_token(str(request.authorization.username))
+            except:
+                try:
+                    decoded = decode_token(request.json.get('token'))
+                except Exception as e:
+                    return make_response(jsonify({'message': str(e)}),401)
+            if set(roles).isdisjoint(decoded['roles']):
+                return make_response(jsonify({'message': 'Not authorized for this endpoint'}),401)
+            return f(*args, **kwargs)
+        return decorated
+    return requires_auth_decorator
+
 
 ##########
 # Config #
 ##########
 
 PRIVATE_KEY = os.environ['PRIVATE_KEY']
-PUBLIC_KEY = os.environ['PUBLIC_KEY']
 URL = os.environ['URL']
 API_TITLE = os.environ['API_TITLE']
 API_DESCRIPTION = os.environ['API_DESCRIPTION']
@@ -110,6 +137,19 @@ def verify_password(username_or_token, password):
     return True
 
 
+def check_auth(username, password):
+    """This function is called to check if a username /
+    password combination is valid.
+    """
+    return username == 'admin' and password == 'secret'
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+    'Could not verify your access level for that URL.\n'
+    'You have to login with proper credentials', 401,
+    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
 ##############
 # Namespaces #
 ##############
@@ -136,8 +176,11 @@ class ValidateKey(Resource):
     @ns_keys.doc('validate_key')
     @ns_keys.expect(validate_model)
     def post(self):
-        token = request.json.get('token')
-        return jsonify(decode_token(token))
+        decoded = decode_token(request.json.get('token'))
+        if 'message' in decoded:
+            return make_response(jsonify(decoded),401)
+        else:
+            return jsonify(decoded)
 
 
 ns_users = Namespace('users', description='User login')
@@ -221,10 +264,16 @@ class AdminTokenRoute(Resource):
 
 @ns_users.route('/resource')
 class ResourceRoute(Resource):
-    @ns_users.doc('user_resource')
-    @auth.login_required
+    @ns_users.doc('user_resource_post')
+    @requires_auth(['user','admin'])
+    @ns_keys.expect(validate_model)
+    def post(self):
+        return jsonify({'message': 'Success'})
+    
+    @ns_users.doc('user_resource_get')
+    @requires_auth(['user','admin'])
     def get(self):
-        return jsonify({'data': 'Success {}'.format(g.user.username)})
+        return jsonify({'message': 'Success'})
 
 
 api.add_namespace(ns_users)
