@@ -28,8 +28,11 @@ def requires_auth(roles):
             def decode_token(token):
                 return jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
             try:
-                decoded = decode_token(str(request.authorization.username))
-            except:
+                decoded = decode_token(str(request.headers['Token']))
+                print(decoded)
+            except Exception as e:
+                if type(e) == jwt.exceptions.ExpiredSignatureError:
+                    return make_response(jsonify({'message': str(e)}), 401)
                 if request.json == None:
                     return make_response(jsonify({'message': 'Token not posted'}), 401)
                 try:
@@ -73,8 +76,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 CORS(app)
 db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
+
+authorizations = {
+        'token': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'token'}
+        }
 api = Api(app, version='1.0', title=API_TITLE,
             description=API_DESCRIPTION,
+            authorizations=authorizations
             )
 migrate = Migrate(app, db)
 
@@ -139,18 +150,7 @@ def verify_password(username_or_token, password):
     return True
 
 
-def check_auth(username, password):
-    """This function is called to check if a username /
-    password combination is valid.
-    """
-    return username == 'admin' and password == 'secret'
 
-def authenticate():
-    """Sends a 401 response that enables basic auth"""
-    return Response(
-    'Could not verify your access level for that URL.\n'
-    'You have to login with proper credentials', 401,
-    {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 ##############
 # Namespaces #
@@ -231,6 +231,11 @@ class UserPostRoute(Resource):
         db.session.commit()
         return jsonify(user.toJSON())
 
+    @ns_users.doc('user_list')
+    @requires_auth(['admin'])
+    def get(self):
+        jsonify([obj.toJSON(full=full) for obj in User.query.all()])
+
 @ns_users.route('/new_role/<username>')
 class NewRole(Resource):
     @ns_users.doc('user_new_role')
@@ -264,6 +269,7 @@ class AdminTokenRoute(Resource):
         return jsonify({'token': token, 'duration': expiration})
 
 
+
 @ns_users.route('/resource')
 class ResourceRoute(Resource):
     @ns_users.doc('user_resource_post')
@@ -274,6 +280,7 @@ class ResourceRoute(Resource):
     
     @ns_users.doc('user_resource_get')
     @requires_auth(['user','admin'])
+    @api.doc(security='token')
     def get(self):
         return jsonify({'message': 'Success'})
 
