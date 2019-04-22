@@ -118,7 +118,7 @@ def decode_token(token):
     try:
         decoded = jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
     except Exception as e:
-        return {'message': e}
+        return {'message': str(e)}
     else:
         return decoded
 
