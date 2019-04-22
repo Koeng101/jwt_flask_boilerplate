@@ -232,10 +232,19 @@ class UserPostRoute(Resource):
         db.session.commit()
         return jsonify(user.toJSON())
 
-    @ns_users.doc('user_list')
+    @ns_users.doc('user_list',security='token')
     @requires_auth(['admin'])
     def get(self):
-        jsonify([obj.toJSON(full=full) for obj in User.query.all()])
+        return jsonify([obj.toJSON() for obj in User.query.all()])
+
+@ns_users.route('/<username>')
+class UserRoute(Resource):
+    @ns_users.doc('user_delete',security='token')
+    @requires_auth(['admin'])
+    def delete(self,username):
+        db.session.delete(User.query.filter_by(username=username).first())
+        db.session.commit()
+        return jsonify({'success':True})
 
 @ns_users.route('/new_role/<username>')
 class NewRole(Resource):
@@ -255,8 +264,8 @@ class TokenRoute(Resource):
     @ns_users.doc('user_token')
     @auth.login_required
     def get(self):
-        token = g.user.generate_auth_token(600)
-        return jsonify({'token': token, 'duration': 600})
+        token = g.user.generate_auth_token(1800)
+        return jsonify({'token': token, 'duration': 1800})
 
 @ns_users.route('/admin/token/<expiration>')
 class AdminTokenRoute(Resource):
@@ -279,9 +288,8 @@ class ResourceRoute(Resource):
     def post(self):
         return jsonify({'message': 'Success'})
     
-    @ns_users.doc('user_resource_get')
+    @ns_users.doc('user_resource_get',security='token')
     @requires_auth(['user','admin'])
-    @api.doc(security='token')
     def get(self):
         return jsonify({'message': 'Success'})
 
